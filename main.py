@@ -1,5 +1,6 @@
 from os import system
 from shutil import get_terminal_size
+import pickle
 
 
 class Project:
@@ -24,21 +25,20 @@ class Task:
 
 class ProjectManager:
     def __init__(self, save=0):
-        self.projects = {'Miscellaneous': Project('Miscellaneous')}
+        self.projects = {}
         self.project_in_focus = 'Miscellaneous'
         self.width = get_terminal_size()[0]
 
         self.running = True
         self.main_instructions = {'quit': Quit, 'create': CreateProject, 'add': AddTask,
-                                  'shift focus to': ShiftFocus, 'mark as done': CrossOut, 'archive': Archive}
+                                  'shift focus to': ShiftFocus, 'mark as done': CrossOut, 'archive': Archive, 'save': Save, 'done': CrossOut, 'shift to': ShiftFocus}
 
-        self.save = save
         self.open_save()
-
         self.run()
 
     def open_save(self):
-        pass
+        open_save = open('save.pickle', 'rb')
+        self.projects = pickle.load(open_save)
 
     def display_project(self):
         self.width = get_terminal_size()[0]
@@ -48,7 +48,7 @@ class ProjectManager:
         print(self.width * '_')
         print('[Projects]:' + ' \n')
         for project in self.projects.values():
-            if project == self.project_in_focus:
+            if project.name == self.project_in_focus:
                 print('*[{}]'.format(project.name))
             else:
                 print('[{}]'.format(project.name))
@@ -74,21 +74,12 @@ class ProjectManager:
         self.main_instructions[instruction](
             self, main_arg, decomposed_arguments)
 
-    def get_instructions(self):
-        pass
-
-    def make_save(self):
-        pass
-
     def center(self, string):
         return (self.width - len(string)) // 2 * ' '
 
-    def get_project_names(self):
-        return {project.name: project for project in self.projects}
-
 
 class Instruction:
-    def __init__(self, manager, main_arg, arguments):
+    def __init__(self, manager, main_arg=None, arguments={}):
         self.manager = manager
         self.main_arg = main_arg
         self.arguments = arguments
@@ -104,6 +95,9 @@ class Quit(Instruction):
         self.execute()
 
     def execute(self):
+        confirmation = input('Do you want to save ? ')
+        if confirmation in ['y', 'yes', 'Yes']:
+            Save(self.manager)
         system('clear')
         self.manager.running = False
 
@@ -128,7 +122,7 @@ class AddTask(Instruction):
         if self.arguments is not None and 'to' in self.arguments:
             project_name = self.arguments['to']
         else:
-            project_name = 'Miscellaneous'
+            project_name = self.manager.project_in_focus
         self.manager.projects[project_name].create_task(task_content)
 
 
@@ -138,7 +132,8 @@ class ShiftFocus(Instruction):
         self.execute()
 
     def execute(self):
-        self.manager.project_in_focus = self.manager.projects[self.main_arg]
+        if self.main_arg in self.manager.projects:
+            self.manager.project_in_focus = self.main_arg
 
 
 class CrossOut(Instruction):
@@ -151,7 +146,7 @@ class CrossOut(Instruction):
         if 'from' in self.arguments and self.arguments['from'] in self.manager.projects:
             project = self.manager.projects[self.arguments['from']]
         else:
-            project = self.manager.projects['Miscellaneous']
+            project = self.manager.projects[self.manager.project_in_focus]
         project.remove_task_nb(int(self.main_arg) - 1)
 
 
@@ -166,9 +161,14 @@ class Archive(Instruction):
 
 
 class Save(Instruction):
-    def __init__(self, manager, main_arg, arguments):
+    def __init__(self, manager, main_arg=None, arguments={}):
         super().__init__(manager, main_arg, arguments)
         self.execute()
+
+    def execute(self):
+        save = open('save.pickle', 'wb')
+        pickle.dump(self.manager.projects, save)
+        save.close()
 
 
 ProjectManager()
