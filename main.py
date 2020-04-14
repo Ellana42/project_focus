@@ -1,37 +1,33 @@
 from os import system
 from shutil import get_terminal_size
 import pickle
-
-
-class Project:
-    def __init__(self, name, due_date=None):
-        self.name = name
-        self.tasks = []
-        self.due_date = due_date
-
-    def create_task(self, content, due_date=None):
-        self.tasks.append(Task(content, due_date))
-
-    def remove_task_nb(self, nb_task):
-        if nb_task < len(self.tasks):
-            self.tasks.pop(nb_task)
-
-
-class Task:
-    def __init__(self, content, due_date):
-        self.content = content
-        self.due_date = due_date
+from instructions import *
+from project import Project, Task
 
 
 class ProjectManager:
+    PURPLE = '\033[95m'
+    CYAN = '\033[96m'
+    DARKCYAN = '\033[36m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
+
     def __init__(self, save=0):
         self.projects = {}
         self.project_in_focus = 'Miscellaneous'
         self.width = get_terminal_size()[0]
+        self.col_width = (self.width - 2) // 3
 
         self.running = True
         self.main_instructions = {'quit': Quit, 'create': CreateProject, 'add': AddTask,
-                                  'shift focus to': ShiftFocus, 'mark as done': CrossOut, 'archive': Archive, 'save': Save, 'done': CrossOut, 'shift to': ShiftFocus}
+                                  'shift focus to': ShiftFocus, 'mark as done': CrossOut,
+                                  'archive': Archive, 'save': Save, 'done': CrossOut,
+                                  'shift to': ShiftFocus, 'focus on': FocusTask}
 
         self.open_save()
         self.run()
@@ -39,21 +35,30 @@ class ProjectManager:
     def open_save(self):
         open_save = open('save.pickle', 'rb')
         self.projects = pickle.load(open_save)
+        open_save.close()
+
+        focus_save = open('focus.pickle', 'rb')
+        self.project_in_focus = pickle.load(focus_save)
+        focus_save.close()
 
     def display_project(self):
-        self.width = get_terminal_size()[0]
         system('clear')
-        title = '[Project Focus]'
-        print(self.center(title) + title)
-        print(self.width * '_')
-        print('[Projects]:' + ' \n')
-        for project in self.projects.values():
-            if project.name == self.project_in_focus:
-                print('*[{}]'.format(project.name))
+        print()
+        focused_project = self.projects[self.project_in_focus]
+        other_projects = [
+            project for project in self.projects.values() if project.name != self.project_in_focus]
+        print(' ' + '[' + focused_project.name + ']' + '\n \n')
+        for task in focused_project.tasks:
+            if task == focused_project.task_in_focus:
+                print(self.BOLD + '     ' + '• ' +
+                      task.content + '\n' + self.END)
             else:
-                print('[{}]'.format(project.name))
-            for task in project.tasks:
-                print('    ' + '• ' + task.content)
+                print('     ' + '• ' + task.content + '\n')
+
+        print('\nOther projects: \n')
+        for project in other_projects:
+            print(' - ' + project.name)
+        print('\n\n')
 
     def run(self):
         while self.running:
@@ -66,109 +71,29 @@ class ProjectManager:
             command.pop()
         nb_args = len(command)
         instruction = command[0].rstrip().lstrip()
-        main_arg = None
-        if nb_args > 1:
-            main_arg = command[1]
-        decomposed_arguments = {
-            command[i].rstrip().lstrip(): command[i + 1] for i in range(2, nb_args // 2 + 1)}
-        self.main_instructions[instruction](
-            self, main_arg, decomposed_arguments)
+        if instruction in self.main_instructions:
+
+            main_arg = None
+            if nb_args > 1:
+                main_arg = command[1]
+            decomposed_arguments = {
+                command[i].rstrip().lstrip(): command[i + 1] for i in range(2, nb_args // 2 + 1)}
+
+            self.main_instructions[instruction](
+                self, main_arg, decomposed_arguments)
 
     def center(self, string):
         return (self.width - len(string)) // 2 * ' '
 
-
-class Instruction:
-    def __init__(self, manager, main_arg=None, arguments={}):
-        self.manager = manager
-        self.main_arg = main_arg
-        self.arguments = arguments
-        self.mandatory_arguments = []
-
-    def execute(self):
-        pass
-
-
-class Quit(Instruction):
-    def __init__(self, manager, main_arg, arguments):
-        super().__init__(manager, main_arg, arguments)
-        self.execute()
-
-    def execute(self):
-        confirmation = input('Do you want to save ? ')
-        if confirmation in ['y', 'yes', 'Yes']:
-            Save(self.manager)
-        system('clear')
-        self.manager.running = False
-
-
-class CreateProject(Instruction):
-    def __init__(self, manager, main_arg, arguments):
-        super().__init__(manager, main_arg, arguments)
-        self.execute()
-
-    def execute(self):
-        self.manager.projects[self.main_arg] = Project(self.main_arg)
-
-
-class AddTask(Instruction):
-    def __init__(self, manager, main_arg, arguments):
-        super().__init__(manager, main_arg, arguments)
-
-        self.execute()
-
-    def execute(self):
-        task_content = self.main_arg
-        if self.arguments is not None and 'to' in self.arguments:
-            project_name = self.arguments['to']
-        else:
-            project_name = self.manager.project_in_focus
-        self.manager.projects[project_name].create_task(task_content)
-
-
-class ShiftFocus(Instruction):
-    def __init__(self, manager, main_arg, arguments):
-        super().__init__(manager, main_arg, arguments)
-        self.execute()
-
-    def execute(self):
-        if self.main_arg in self.manager.projects:
-            self.manager.project_in_focus = self.main_arg
-
-
-class CrossOut(Instruction):
-    def __init__(self, manager, main_arg, arguments):
-        super().__init__(manager, main_arg, arguments)
-
-        self.execute()
-
-    def execute(self):
-        if 'from' in self.arguments and self.arguments['from'] in self.manager.projects:
-            project = self.manager.projects[self.arguments['from']]
-        else:
-            project = self.manager.projects[self.manager.project_in_focus]
-        project.remove_task_nb(int(self.main_arg) - 1)
-
-
-class Archive(Instruction):
-    def __init__(self, manager, main_arg, arguments):
-        super().__init__(manager, main_arg, arguments)
-        self.execute()
-
-    def execute(self):
-        if self.main_arg in self.manager.projects:
-            del self.manager.projects[self.main_arg]
-
-
-class Save(Instruction):
-    def __init__(self, manager, main_arg=None, arguments={}):
-        super().__init__(manager, main_arg, arguments)
-        self.execute()
-
-    def execute(self):
-        save = open('save.pickle', 'wb')
-        pickle.dump(self.manager.projects, save)
-        save.close()
+    def reinitialize_projects(self):
+        self.project_in_focus = 'Miscellaneous'
+        new_project_file = {}
+        for project in self.projects.values():
+            tasks = project.tasks
+            new_project = Project(project.name)
+            new_project.tasks = tasks
+            new_project_file[project.name] = new_project
+        self.projects = new_project_file
 
 
 ProjectManager()
