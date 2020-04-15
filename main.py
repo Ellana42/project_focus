@@ -1,11 +1,12 @@
+from project import Project, Task
 from os import system
 from shutil import get_terminal_size
 import pickle
 from instructions import *
-from project import Project, Task
 
 
 class ProjectManager:
+
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
     DARKCYAN = '\033[36m'
@@ -26,8 +27,11 @@ class ProjectManager:
         self.running = True
         self.main_instructions = {'quit': Quit, 'create': CreateProject, 'add': AddTask,
                                   'shift focus to': ShiftFocus, 'mark as done': CrossOut,
-                                  'archive': Archive, 'save': Save, 'done': CrossOut,
-                                  'shift to': ShiftFocus, 'focus on': FocusTask}
+                                  'archive': Archive, 'done': CrossOut,
+                                  'shift to': ShiftFocus, 'focus on': FocusTask,
+                                  'shift': ShiftFocus, 'delete': Delete, 'empty done': EmptyDone}
+
+        self.aliases = {}
 
         self.open_save()
         self.run()
@@ -40,6 +44,8 @@ class ProjectManager:
         focus_save = open('focus.pickle', 'rb')
         self.project_in_focus = pickle.load(focus_save)
         focus_save.close()
+
+        self.generate_aliases()
 
     def display_project(self):
         system('clear')
@@ -54,6 +60,9 @@ class ProjectManager:
                       task.content + '\n' + self.END)
             else:
                 print('     ' + '• ' + task.content + '\n')
+        for task in focused_project.done_tasks:
+            print(self.CYAN + '     ' + '• ' +
+                  task.content + '\n' + self.END)
 
         print('\nOther projects: \n')
         for project in other_projects:
@@ -62,25 +71,25 @@ class ProjectManager:
 
     def run(self):
         while self.running:
+            Save(self)
             self.display_project()
             self.interpret_command(input('- '))
 
     def interpret_command(self, command):
         command = command.split('\'')
-        if len(command) > 1:
-            command.pop()
-        nb_args = len(command)
-        instruction = command[0].rstrip().lstrip()
-        if instruction in self.main_instructions:
+        command = [argument.rstrip().lstrip()
+                   for argument in command if argument not in ['', ' ']]
 
-            main_arg = None
-            if nb_args > 1:
-                main_arg = command[1]
-            decomposed_arguments = {
-                command[i].rstrip().lstrip(): command[i + 1] for i in range(2, nb_args // 2 + 1)}
+        nb_args = len(command)
+        instruction = command[0]
+        main_arg = command[1] if nb_args > 1 else None
+
+        if instruction in self.main_instructions:
+            sub_args = {command[i]: command[i + 1]
+                        for i in range(2, nb_args // 2 + 1)}
 
             self.main_instructions[instruction](
-                self, main_arg, decomposed_arguments)
+                self, main_arg, sub_args)
 
     def center(self, string):
         return (self.width - len(string)) // 2 * ' '
@@ -94,6 +103,26 @@ class ProjectManager:
             new_project.tasks = tasks
             new_project_file[project.name] = new_project
         self.projects = new_project_file
+
+    def generate_aliases(self):
+        projects = self.projects
+        alias_dict = {}
+
+        for project in projects.values():
+            project_alias = {
+                alias: project.name for alias in self.create_aliases(project.name)}
+            alias_dict.update(project_alias)
+
+        self.aliases = alias_dict
+
+    @classmethod
+    def create_aliases(cls, project_name):
+        short = project_name.lower()[0: 4]
+        lowercase = project_name.lower()
+        words = project_name.lower().split()
+        first_word = words[0]
+        initials = ''.join(word[0] for word in words)
+        return [project_name, short, lowercase, first_word, initials]
 
 
 ProjectManager()

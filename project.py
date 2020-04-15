@@ -4,6 +4,7 @@ class Project:
         self.tasks = []
         self.due_date = due_date
         self.task_in_focus = None
+        self.done_tasks = []
 
     def create_task(self, content, due_date=None):
         self.tasks.append(Task(content, due_date))
@@ -19,6 +20,13 @@ class Project:
 
     def focus_on_no_task(self):
         self.task_in_focus = None
+
+    def mark_as_done(self, nb_task):
+        if nb_task < len(self.tasks):
+            task = self.tasks.pop(nb_task)
+            self.done_tasks.append(task)
+            if task == self.task_in_focus:
+                self.task_in_focus = None
 
 
 class Task:
