@@ -25,13 +25,11 @@ class ProjectManager:
         self.col_width = (self.width - 2) // 3
 
         self.running = True
-        self.main_instructions = {'quit': Quit, 'create': CreateProject, 'add': AddTask,
-                                  'shift focus to': ShiftFocus, 'mark as done': CrossOut,
-                                  'archive': Archive, 'done': CrossOut,
-                                  'shift to': ShiftFocus, 'focus on': FocusTask,
-                                  'shift': ShiftFocus, 'delete': Delete, 'empty done': EmptyDone}
-
-        self.aliases = {}
+        self.instructions = {'quit': Quit, 'create': CreateProject, 'add': AddTask,
+                             'shift focus to': ShiftFocus, 'mark as done': CrossOut,
+                             'archive': Archive, 'focus on': FocusTask, 'delete': Delete,
+                             'empty done': EmptyDone, 'alias': AddShortcut,
+                             'delete alias': DeleteShortcut, 'show alias': DisplayShortcuts}
 
         self.open_save()
         self.run()
@@ -44,6 +42,10 @@ class ProjectManager:
         focus_save = open('focus.pickle', 'rb')
         self.project_in_focus = pickle.load(focus_save)
         focus_save.close()
+
+        shortcut_save = open('shortcuts.pickle', 'rb')
+        self.instructions.update(pickle.load(shortcut_save))
+        shortcut_save.close()
 
         self.generate_aliases()
 
@@ -81,14 +83,14 @@ class ProjectManager:
                    for argument in command if argument not in ['', ' ']]
 
         nb_args = len(command)
-        instruction = command[0]
+        instruction = command[0] if nb_args > 0 else None
         main_arg = command[1] if nb_args > 1 else None
 
-        if instruction in self.main_instructions:
+        if instruction in self.instructions:
             sub_args = {command[i]: command[i + 1]
                         for i in range(2, nb_args // 2 + 1)}
 
-            self.main_instructions[instruction](
+            self.instructions[instruction](
                 self, main_arg, sub_args)
 
     def center(self, string):

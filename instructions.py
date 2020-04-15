@@ -116,6 +116,10 @@ class Save(Instruction):
         pickle.dump(self.manager.project_in_focus, save_focus)
         save_focus.close()
 
+        shortcut_save = open('shortcuts.pickle', 'wb')
+        pickle.dump(self.manager.instructions, shortcut_save)
+        shortcut_save.close()
+
 
 class FocusTask(Instruction):
     def __init__(self, manager, main_arg=None, arguments={}):
@@ -127,3 +131,40 @@ class FocusTask(Instruction):
             project.focus_on_task(self.main_arg)
         else:
             project.focus_on_task('1')
+
+
+class AddShortcut(Instruction):
+    def __init__(self, manager, main_arg, arguments):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        instructions = self.manager.instructions
+        old_command = self.main_arg
+        alias = self.arguments.get('as')
+        if old_command in instructions and type(alias) is str:
+            command = instructions[old_command]
+            self.manager.instructions[alias] = command
+
+
+class DeleteShortcut(Instruction):
+    def __init__(self, manager, main_arg, arguments):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        alias_to_delete = self.main_arg
+        confirmation = input(
+            'Are you sure you want to delete {} ? \n- '.format(alias_to_delete))
+        if confirmation in ['yes', 'y', ' ']:
+            self.manager.instructions.pop(alias_to_delete)
+
+
+class DisplayShortcuts(Instruction):
+    def __init__(self, manager, main_arg=None, arguments={}):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        instruction_list = self.manager.instructions
+        for alias, command in instruction_list.items():
+            description = command
+            print('{}: {}'.format(alias, description))
+        input('Press enter when done reading ')
