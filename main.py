@@ -25,11 +25,13 @@ class ProjectManager:
         self.col_width = (self.width - 2) // 3
 
         self.running = True
+        self.toggle_due_dates = False
         self.instructions = {'quit': Quit, 'create': CreateProject, 'add': AddTask,
                              'shift focus to': ShiftFocus, 'mark as done': CrossOut,
                              'archive': Archive, 'focus on': FocusTask, 'delete': Delete,
                              'empty done': EmptyDone, 'alias': AddShortcut,
-                             'delete alias': DeleteShortcut, 'show alias': DisplayShortcuts}
+                             'delete alias': DeleteShortcut, 'show alias': DisplayShortcuts,
+                             'due': Due, 'toggle due dates': ToggleDue}
 
         self.open_save()
         self.run()
@@ -47,6 +49,10 @@ class ProjectManager:
         self.instructions.update(pickle.load(shortcut_save))
         shortcut_save.close()
 
+        toggle_due_save = open('due.pickle', 'rb')
+        self.toggle_due_dates = pickle.load(toggle_due_save)
+        toggle_due_save.close()
+
         self.generate_aliases()
 
     def display_project(self):
@@ -55,7 +61,12 @@ class ProjectManager:
         focused_project = self.projects[self.project_in_focus]
         other_projects = [
             project for project in self.projects.values() if project.name != self.project_in_focus]
-        print(' ' + '[' + focused_project.name + ']' + '\n \n')
+        if self.toggle_due_dates and focused_project.due_date != '':
+            print(' ' + '[' + focused_project.name + ']' +
+                  '  -  ' + focused_project.get_due_date())
+        else:
+            print(' ' + '[' + focused_project.name + ']')
+        print('\n')
         for task in focused_project.tasks:
             if task == focused_project.task_in_focus:
                 print(self.BOLD + '     ' + '• ' +
@@ -68,7 +79,11 @@ class ProjectManager:
 
         print('\nOther projects: \n')
         for project in other_projects:
-            print(' - ' + project.name)
+            if self.toggle_due_dates and project.due_date != '':
+                print(' - ' + project.name +
+                      ' ({})'.format(project.get_due_date()))
+            else:
+                print(' - ' + project.name)
         print('\n\n')
 
     def run(self):
@@ -103,6 +118,7 @@ class ProjectManager:
             tasks = project.tasks
             new_project = Project(project.name)
             new_project.tasks = tasks
+            new_project.due_date = project.due_date
             new_project_file[project.name] = new_project
         self.projects = new_project_file
 
@@ -125,6 +141,12 @@ class ProjectManager:
         first_word = words[0]
         initials = ''.join(word[0] for word in words)
         return [project_name, short, lowercase, first_word, initials]
+
+    @classmethod
+    def generate_pickle(cls, file_name, initial_content):
+        new_file = open(file_name + '.pickle', 'wb')
+        pickle.dump(initial_content, new_file)
+        new_file.close()
 
 
 ProjectManager()

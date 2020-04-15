@@ -1,8 +1,8 @@
 class Project:
-    def __init__(self, name, due_date=None):
+    def __init__(self, name):
         self.name = name
         self.tasks = []
-        self.due_date = due_date
+        self.due_date = ''
         self.task_in_focus = None
         self.done_tasks = []
 
@@ -27,6 +27,9 @@ class Project:
             self.done_tasks.append(task)
             if task == self.task_in_focus:
                 self.task_in_focus = None
+
+    def get_due_date(self):
+        return self.due_date
 
 
 class Task:

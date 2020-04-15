@@ -17,6 +17,7 @@ class Quit(Instruction):
 
     def execute(self):
         EmptyDone(self.manager)
+        Save(self.manager)
         system('clear')
         self.manager.running = False
 
@@ -120,6 +121,10 @@ class Save(Instruction):
         pickle.dump(self.manager.instructions, shortcut_save)
         shortcut_save.close()
 
+        toggle_due_save = open('due.pickle', 'wb')
+        pickle.dump(self.manager.toggle_due_dates, toggle_due_save)
+        toggle_due_save.close()
+
 
 class FocusTask(Instruction):
     def __init__(self, manager, main_arg=None, arguments={}):
@@ -168,3 +173,21 @@ class DisplayShortcuts(Instruction):
             description = command
             print('{}: {}'.format(alias, description))
         input('Press enter when done reading ')
+
+
+class Due(Instruction):
+    def __init__(self, manager, main_arg, arguments={}):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        project = self.manager.projects[self.manager.project_in_focus]
+        date = self.main_arg
+        project.due_date = date
+
+
+class ToggleDue(Instruction):
+    def __init__(self, manager, main_arg=None, arguments={}):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        self.manager.toggle_due_dates = not self.manager.toggle_due_dates
