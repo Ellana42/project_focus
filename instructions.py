@@ -37,6 +37,7 @@ class CreateProject(Instruction):
 
     def execute(self):
         self.manager.projects[self.main_arg] = Project(self.main_arg)
+        self.generate_aliases()
 
 
 class AddTask(Instruction):
@@ -132,10 +133,21 @@ class FocusTask(Instruction):
 
     def execute(self):
         project = self.manager.projects[self.manager.project_in_focus]
-        if self.main_arg is not None:
+        if self.main_arg in ['none', 'None', 'nothing']:
+            project.stop_focusing()
+        elif self.main_arg is not None:
             project.focus_on_task(self.main_arg)
         else:
             project.focus_on_task('1')
+
+
+class UnfocusTasks(Instruction):
+    def __init__(self, manager, main_arg=None, arguments={}):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        project = self.manager.projects[self.manager.project_in_focus]
+        project.stop_focusing()
 
 
 class AddShortcut(Instruction):
@@ -191,3 +203,31 @@ class ToggleDue(Instruction):
 
     def execute(self):
         self.manager.toggle_due_dates = not self.manager.toggle_due_dates
+
+
+class RenameProject(Instruction):
+    def __init__(self, manager, main_arg=None, arguments={}):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        if self.main_arg is None:
+            project_name = self.manager.project_in_focus
+        else:
+            project_name = self.manager.aliases[self.main_arg]
+
+        project = self.manager.projects.pop(project_name)
+        new_name = input(
+            'What to you want to change {}\'s name to ? \n- '.format(project_name))
+        self.manager.projects[new_name] = project
+        project.name = new_name
+
+
+class DisplayProjects(Instruction):
+    def __init__(self, manager, main_arg=None, arguments={}):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        print(self.manager.projects)
+        '''for project in self.manager.projects.items():
+                                    print(project)'''
+        input('Press enter when done reading ')

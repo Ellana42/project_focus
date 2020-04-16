@@ -31,6 +31,9 @@ class Project:
     def get_due_date(self):
         return self.due_date
 
+    def stop_focusing(self):
+        self.task_in_focus = None
+
 
 class Task:
     def __init__(self, content, due_date):

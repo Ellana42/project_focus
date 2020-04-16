@@ -31,7 +31,8 @@ class ProjectManager:
                              'archive': Archive, 'focus on': FocusTask, 'delete': Delete,
                              'empty done': EmptyDone, 'alias': AddShortcut,
                              'delete alias': DeleteShortcut, 'show alias': DisplayShortcuts,
-                             'due': Due, 'toggle due dates': ToggleDue}
+                             'due': Due, 'toggle due dates': ToggleDue, 'focus on nothing': UnfocusTasks,
+                             'rename': RenameProject, 'display projects': DisplayProjects}
 
         self.open_save()
         self.run()
