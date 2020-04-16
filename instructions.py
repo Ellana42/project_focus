@@ -37,7 +37,7 @@ class CreateProject(Instruction):
 
     def execute(self):
         self.manager.projects[self.main_arg] = Project(self.main_arg)
-        self.generate_aliases()
+        self.manager.generate_aliases()
 
 
 class AddTask(Instruction):
@@ -61,7 +61,10 @@ class ShiftFocus(Instruction):
 
     def execute(self):
         if self.main_arg in self.manager.aliases:
-            self.manager.project_in_focus = self.manager.aliases[self.main_arg]
+            project = self.manager.aliases[self.main_arg]
+            self.manager.project_in_focus = project
+            self.manager.last_opened.remove(project)
+            self.manager.last_opened.insert(0, project)
 
 
 class Delete(Instruction):
@@ -103,6 +106,9 @@ class Archive(Instruction):
     def execute(self):
         if self.main_arg in self.manager.aliases:
             del self.manager.projects[self.manager.aliases[self.main_arg]]
+            self.manager.last_opened.remove(
+                self.manager.aliases[self.main_arg])
+            self.manager.generate_aliases()
 
 
 class Save(Instruction):
@@ -125,6 +131,10 @@ class Save(Instruction):
         toggle_due_save = open('due.pickle', 'wb')
         pickle.dump(self.manager.toggle_due_dates, toggle_due_save)
         toggle_due_save.close()
+
+        last_opened_save = open('last_opened.pickle', 'wb')
+        pickle.dump(self.manager.last_opened, last_opened_save)
+        last_opened_save.close()
 
 
 class FocusTask(Instruction):
@@ -218,8 +228,14 @@ class RenameProject(Instruction):
         project = self.manager.projects.pop(project_name)
         new_name = input(
             'What to you want to change {}\'s name to ? \n- '.format(project_name))
-        self.manager.projects[new_name] = project
-        project.name = new_name
+        if new_name in ['', ' ']:
+            self.manager.projects[project_name] = project
+            project.name = project_name
+        else:
+            self.manager.projects[new_name] = project
+            project.name = new_name
+            self.manager.last_opened[self.manager.last_opened.index(project_name)] = new_name
+            self.manager.generate_aliases()
 
 
 class DisplayProjects(Instruction):
@@ -227,7 +243,6 @@ class DisplayProjects(Instruction):
         super().__init__(manager, main_arg, arguments)
 
     def execute(self):
-        print(self.manager.projects)
-        '''for project in self.manager.projects.items():
-                                    print(project)'''
+        for project in self.manager.projects.items():
+            print(project)
         input('Press enter when done reading ')

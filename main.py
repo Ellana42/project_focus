@@ -34,6 +34,8 @@ class ProjectManager:
                              'due': Due, 'toggle due dates': ToggleDue, 'focus on nothing': UnfocusTasks,
                              'rename': RenameProject, 'display projects': DisplayProjects}
 
+        self.last_opened = []
+
         self.open_save()
         self.run()
 
@@ -54,14 +56,18 @@ class ProjectManager:
         self.toggle_due_dates = pickle.load(toggle_due_save)
         toggle_due_save.close()
 
+        last_opened_save = open('last_opened.pickle', 'rb')
+        self.last_opened = pickle.load(last_opened_save)
+        last_opened_save.close()
+
         self.generate_aliases()
 
     def display_project(self):
+        projects_displayed = 5
         system('clear')
         print()
         focused_project = self.projects[self.project_in_focus]
-        other_projects = [
-            project for project in self.projects.values() if project.name != self.project_in_focus]
+
         if self.toggle_due_dates and focused_project.due_date != '':
             print(' ' + '[' + focused_project.name + ']' +
                   '  -  ' + focused_project.get_due_date())
@@ -79,7 +85,8 @@ class ProjectManager:
                   task.content + '\n' + self.END)
 
         print('\nOther projects: \n')
-        for project in other_projects:
+        for project_name in self.last_opened[1:projects_displayed + 1]:
+            project = self.projects[project_name]
             if self.toggle_due_dates and project.due_date != '':
                 print(' - ' + project.name +
                       ' ({})'.format(project.get_due_date()))
