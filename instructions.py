@@ -10,6 +10,13 @@ class Instruction:
         self.arguments = arguments
         self.execute()
 
+    def is_int(self):
+        try:
+            int(self.main_arg)
+            return True
+        except ValueError:
+            return False
+
 
 class Quit(Instruction):
     def __init__(self, manager, main_arg, arguments):
@@ -256,16 +263,12 @@ class NbDisplayed(Instruction):
         super().__init__(manager, main_arg, arguments)
 
     def execute(self):
-        previous_lenght = self.manager.settings.other_lenght
-        self.manager.settings.other_lenght = int(
-            self.main_arg) if self.is_int() else previous_lenght
-
-    def is_int(self):
-        try:
-            int(self.main_arg)
-            return True
-        except ValueError:
-            return False
+        if self.main_arg == 'all':
+            self.manager.settings.other_lenght = 1000
+        else:
+            previous_lenght = self.manager.settings.other_lenght
+            self.manager.settings.other_lenght = int(
+                self.main_arg) if self.is_int() else previous_lenght
 
 
 class DefaultSettings(Instruction):
