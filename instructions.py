@@ -36,8 +36,10 @@ class CreateProject(Instruction):
         super().__init__(manager, main_arg, arguments)
 
     def execute(self):
-        self.manager.projects[self.main_arg] = Project(self.main_arg)
-        self.manager.generate_aliases()
+        if type(self.main_arg) is str:
+            self.manager.projects[self.main_arg] = Project(self.main_arg)
+            self.manager.last_opened.insert(0, self.main_arg)
+            self.manager.generate_aliases()
 
 
 class AddTask(Instruction):
@@ -234,7 +236,8 @@ class RenameProject(Instruction):
         else:
             self.manager.projects[new_name] = project
             project.name = new_name
-            self.manager.last_opened[self.manager.last_opened.index(project_name)] = new_name
+            self.manager.last_opened[self.manager.last_opened.index(
+                project_name)] = new_name
             self.manager.generate_aliases()
 
 

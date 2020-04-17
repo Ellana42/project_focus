@@ -37,6 +37,7 @@ class ProjectManager:
         self.last_opened = []
 
         self.open_save()
+        self.reinitialize_queue()
         self.run()
 
     def open_save(self):
@@ -63,7 +64,7 @@ class ProjectManager:
         self.generate_aliases()
 
     def display_project(self):
-        projects_displayed = 5
+        projects_displayed = 100
         system('clear')
         print()
         focused_project = self.projects[self.project_in_focus]
@@ -129,6 +130,15 @@ class ProjectManager:
             new_project.due_date = project.due_date
             new_project_file[project.name] = new_project
         self.projects = new_project_file
+
+    def reinitialize_queue(self):
+        old_queue = self.last_opened
+        new_queue = [
+            project for project in old_queue if project in self.projects]
+        missing_projects = [
+            project for project in self.projects if project not in new_queue]
+        new_queue.extend(missing_projects)
+        self.last_opened = new_queue
 
     def generate_aliases(self):
         projects = self.projects
