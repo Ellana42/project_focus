@@ -3,6 +3,7 @@ from os import system
 from shutil import get_terminal_size
 import pickle
 from instructions import *
+from settings import Settings
 
 
 class ProjectManager:
@@ -25,7 +26,7 @@ class ProjectManager:
         self.col_width = (self.width - 2) // 3
 
         self.running = True
-        self.toggle_due_dates = False
+        self.settings = Settings()
         self.instructions = {'quit': Quit, 'create': CreateProject, 'add': AddTask,
                              'shift focus to': ShiftFocus, 'mark as done': CrossOut,
                              'archive': Archive, 'focus on': FocusTask, 'delete': Delete,
@@ -40,6 +41,12 @@ class ProjectManager:
         self.reinitialize_queue()
         self.run()
 
+    def run(self):
+        while self.running:
+            Save(self)
+            self.display_project()
+            self.interpret_command(input('- '))
+
     def open_save(self):
         open_save = open('save.pickle', 'rb')
         self.projects = pickle.load(open_save)
@@ -53,9 +60,9 @@ class ProjectManager:
         self.instructions.update(pickle.load(shortcut_save))
         shortcut_save.close()
 
-        toggle_due_save = open('due.pickle', 'rb')
-        self.toggle_due_dates = pickle.load(toggle_due_save)
-        toggle_due_save.close()
+        settings = open('settings.pickle', 'rb')
+        self.settings = pickle.load(settings)
+        settings.close()
 
         last_opened_save = open('last_opened.pickle', 'rb')
         self.last_opened = pickle.load(last_opened_save)
@@ -69,37 +76,12 @@ class ProjectManager:
         print()
         focused_project = self.projects[self.project_in_focus]
 
-        if self.toggle_due_dates and focused_project.due_date != '':
-            print(' ' + '[' + focused_project.name + ']' +
-                  '  -  ' + focused_project.get_due_date())
-        else:
-            print(' ' + '[' + focused_project.name + ']')
-        print('\n')
-        for task in focused_project.tasks:
-            if task == focused_project.task_in_focus:
-                print(self.BOLD + '     ' + '• ' +
-                      task.content + '\n' + self.END)
-            else:
-                print('     ' + '• ' + task.content + '\n')
-        for task in focused_project.done_tasks:
-            print(self.CYAN + '     ' + '• ' +
-                  task.content + '\n' + self.END)
+        self.detailed_project(focused_project)
 
         print('\nOther projects: \n')
-        for project_name in self.last_opened[1:projects_displayed + 1]:
-            project = self.projects[project_name]
-            if self.toggle_due_dates and project.due_date != '':
-                print(' - ' + project.name +
-                      ' ({})'.format(project.get_due_date()))
-            else:
-                print(' - ' + project.name)
-        print('\n\n')
-
-    def run(self):
-        while self.running:
-            Save(self)
-            self.display_project()
-            self.interpret_command(input('- '))
+        other_projects = [self.projects[project_name]
+                          for project_name in self.last_opened[1:projects_displayed + 1]]
+        self.project_list(other_projects)
 
     def interpret_command(self, command):
         command = command.split('\'')
@@ -165,6 +147,36 @@ class ProjectManager:
         new_file = open(file_name + '.pickle', 'wb')
         pickle.dump(initial_content, new_file)
         new_file.close()
+
+    #------------- Displaying ----------------------
+
+    def detailed_project(self, project):
+        display_dates = self.settings.toggle_due
+        if display_dates and project.due_date != '':
+            print(' ' + '[' + project.name + ']' +
+                  '  -  ' + project.get_due_date())
+        else:
+            print(' ' + '[' + project.name + ']')
+        print('\n')
+        for task in project.tasks:
+            if task == project.task_in_focus:
+                print(self.BOLD + '     ' + '• ' +
+                      task.content + '\n' + self.END)
+            else:
+                print('     ' + '• ' + task.content + '\n')
+        for task in project.done_tasks:
+            print(self.CYAN + '     ' + '• ' +
+                  task.content + '\n' + self.END)
+
+    def project_list(self, project_list):
+        display_dates = self.settings.toggle_due
+        for project in project_list:
+            if display_dates and project.due_date != '':
+                print(' - ' + project.name +
+                      ' ({})'.format(project.get_due_date()))
+            else:
+                print(' - ' + project.name)
+        print('\n\n')
 
 
 ProjectManager()

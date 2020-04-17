@@ -130,9 +130,9 @@ class Save(Instruction):
         pickle.dump(self.manager.instructions, shortcut_save)
         shortcut_save.close()
 
-        toggle_due_save = open('due.pickle', 'wb')
-        pickle.dump(self.manager.toggle_due_dates, toggle_due_save)
-        toggle_due_save.close()
+        settings = open('settings.pickle', 'wb')
+        pickle.dump(self.manager.settings, settings)
+        settings.close()
 
         last_opened_save = open('last_opened.pickle', 'wb')
         pickle.dump(self.manager.last_opened, last_opened_save)
@@ -214,7 +214,7 @@ class ToggleDue(Instruction):
         super().__init__(manager, main_arg, arguments)
 
     def execute(self):
-        self.manager.toggle_due_dates = not self.manager.toggle_due_dates
+        self.manager.settings.toggle_due = not self.manager.settings.toggle_due
 
 
 class RenameProject(Instruction):
