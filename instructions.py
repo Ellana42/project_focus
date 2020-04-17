@@ -249,3 +249,31 @@ class DisplayProjects(Instruction):
         for project in self.manager.projects.items():
             print(project)
         input('Press enter when done reading ')
+
+
+class NbDisplayed(Instruction):
+    def __init__(self, manager, main_arg=None, arguments={}):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        previous_lenght = self.manager.settings.other_lenght
+        self.manager.settings.other_lenght = int(
+            self.main_arg) if self.is_int() else previous_lenght
+
+    def is_int(self):
+        try:
+            int(self.main_arg)
+            return True
+        except ValueError:
+            return False
+
+
+class DefaultSettings(Instruction):
+    def __init__(self, manager, main_arg=None, arguments={}):
+        super().__init__(manager, main_arg, arguments)
+
+    def execute(self):
+        confirmation = input(
+            'Are you sure ? This will reset all your settings \n- ')
+        if confirmation in ['yes', 'y', ' ']:
+            self.manager.settings.default_settings()

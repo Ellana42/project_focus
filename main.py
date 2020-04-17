@@ -33,10 +33,12 @@ class ProjectManager:
                              'empty done': EmptyDone, 'alias': AddShortcut,
                              'delete alias': DeleteShortcut, 'show alias': DisplayShortcuts,
                              'due': Due, 'toggle due dates': ToggleDue, 'focus on nothing': UnfocusTasks,
-                             'rename': RenameProject, 'display projects': DisplayProjects}
+                             'rename': RenameProject, 'display projects': DisplayProjects,
+                             'projects displayed': NbDisplayed, 'reset settings': DefaultSettings}
+
+        self.display_modes = {'display_project': self.display_project}
 
         self.last_opened = []
-
         self.open_save()
         self.reinitialize_queue()
         self.run()
@@ -44,7 +46,8 @@ class ProjectManager:
     def run(self):
         while self.running:
             Save(self)
-            self.display_project()
+            display_mode = self.display_modes[self.settings.display_mode]
+            display_mode()
             self.interpret_command(input('- '))
 
     def open_save(self):
@@ -71,7 +74,6 @@ class ProjectManager:
         self.generate_aliases()
 
     def display_project(self):
-        projects_displayed = 100
         system('clear')
         print()
         focused_project = self.projects[self.project_in_focus]
@@ -79,6 +81,7 @@ class ProjectManager:
         self.detailed_project(focused_project)
 
         print('\nOther projects: \n')
+        projects_displayed = self.settings.other_lenght
         other_projects = [self.projects[project_name]
                           for project_name in self.last_opened[1:projects_displayed + 1]]
         self.project_list(other_projects)
